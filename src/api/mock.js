@@ -4,7 +4,6 @@ export const MOCK_USER = {
   id: 1,
   studentId: '2019123456',
   nickname: '클라이머123',
-  email: 'test@knu.ac.kr',
 }
 
 const POSTS = [
@@ -44,12 +43,12 @@ const POSTS = [
     location: '반월당 보드게임카페',
     currentCount: 4,
     maxCount: 4,
-    status: 'MATCHED',
+    status: 'COMPLETED',
     authorNickname: '보드마스터',
     authorId: 3,
     description: '카탄, 아줄, 스플렌더 좋아하시는 분 환영!',
     appliedUserIds: [],
-    openChatLink: 'https://open.kakao.com/o/example',
+    openChatUrl: 'https://open.kakao.com/o/example',
   },
   {
     id: 4,
@@ -73,12 +72,12 @@ const POSTS = [
     location: '동성로 CGV',
     currentCount: 2,
     maxCount: 2,
-    status: 'MATCHED',
+    status: 'COMPLETED',
     authorNickname: '시네마고',
     authorId: 5,
     description: '드디어 매칭됐어요!',
     appliedUserIds: [],
-    openChatLink: 'https://open.kakao.com/o/example2',
+    openChatUrl: 'https://open.kakao.com/o/example2',
   },
   {
     id: 6,
@@ -96,29 +95,34 @@ const POSTS = [
   },
 ]
 
-const NOTIFICATIONS = [
+// 백엔드 GET /api/notifications 의 data.notifications 형태와 동일하게 맞춤
+// (type: MATCH_COMPLETE, message 단일 필드, openChatUrl, createdAt)
+// ※ id / isRead 는 읽음 처리 기능을 위해 포함 — 백엔드도 동일하게 내려줘야 함
+let NOTIFICATIONS = [
   {
     id: 1,
-    type: 'MATCHED',
-    title: '🎉 내 모임 매칭 완료!',
-    body: '북문 파스타집 모임의 정원이 다 찼어요. 참여자 모두에게 링크가 전송됐습니다.',
+    type: 'MATCH_COMPLETE',
+    postId: 1,
+    message: '주최하신 [북문 파스타집] 모임의 인원이 모두 충족되어 모집이 완료되었습니다! 아래 오픈채팅방 링크로 참여해 주세요.',
+    openChatUrl: 'https://open.kakao.com/o/example',
     isRead: false,
     createdAt: new Date(Date.now() - 1800000).toISOString(),
   },
   {
     id: 2,
-    type: 'CHAT_LINK',
-    title: '💬 오픈채팅 링크 도착',
-    body: '보드게임카페 모임 오픈채팅방이 공개되었어요!',
-    openChatLink: 'https://open.kakao.com/o/example',
+    type: 'MATCH_COMPLETE',
+    postId: 3,
+    message: '신청하신 [보드게임카페] 모임이 완료되었습니다! 아래 오픈채팅방 링크로 참여해 주세요.',
+    openChatUrl: 'https://open.kakao.com/o/example',
     isRead: false,
     createdAt: new Date(Date.now() - 7200000).toISOString(),
   },
   {
     id: 3,
-    type: 'MATCHED',
-    title: '🎉 신청한 모임 매칭 완료!',
-    body: '영화 같이 보실 분 모임이 확정됐습니다!',
+    type: 'MATCH_COMPLETE',
+    postId: 5,
+    message: '신청하신 [영화 같이 보실 분] 모임이 완료되었습니다!',
+    openChatUrl: 'https://open.kakao.com/o/example2',
     isRead: true,
     createdAt: new Date(Date.now() - 86400000).toISOString(),
   },
@@ -137,6 +141,26 @@ export const mockApi = {
     return { token: MOCK_TOKEN, user: MOCK_USER }
   },
 
+  // 백엔드 GET /api/users/me 의 data 형태와 동일
+  getMe: async () => {
+    await delay()
+    return {
+      profile: { studentId: MOCK_USER.studentId, nickname: MOCK_USER.nickname },
+      hostedPosts: [POSTS[0]].map((p) => ({
+        postId: p.id, title: p.title, status: p.status, meetingTime: p.meetDate,
+      })),
+      appliedPosts: [POSTS[1], POSTS[2]].map((p) => ({
+        postId: p.id, title: p.title, status: p.status, meetingTime: p.meetDate,
+      })),
+    }
+  },
+
+  // 명세서 1.6 — PATCH /api/users/me
+  updateMyProfile: async () => {
+    await delay(500)
+    return { success: true, message: '프로필 정보가 변경되었습니다.' }
+  },
+
   getPosts: async () => { await delay(); return { posts: POSTS } },
 
   getPost: async (id) => {
@@ -153,11 +177,21 @@ export const mockApi = {
 
   deletePost: async () => { await delay(500) },
 
+  // 명세서 2.5 — GET /api/posts/search
+  searchPosts: async (keyword) => {
+    await delay()
+    const k = (keyword ?? '').trim()
+    const posts = !k
+      ? POSTS
+      : POSTS.filter((p) => p.title.includes(k) || p.tags.some((t) => t.includes(k)))
+    return { posts }
+  },
+
   applyPost: async (id) => {
     await delay(600)
     const post = POSTS.find((p) => p.id === Number(id))
     const next = post.currentCount + 1
-    return { ...post, currentCount: next, appliedUserIds: [MOCK_USER.id], status: next >= post.maxCount ? 'MATCHED' : 'OPEN' }
+    return { ...post, currentCount: next, appliedUserIds: [MOCK_USER.id], status: next >= post.maxCount ? 'COMPLETED' : 'OPEN' }
   },
 
   cancelApply: async (id) => {
@@ -168,8 +202,10 @@ export const mockApi = {
 
   getNotifications: async () => { await delay(); return { notifications: NOTIFICATIONS } },
 
-  getMe: async () => {
-    await delay()
-    return { ...MOCK_USER, createdPosts: [POSTS[0]], appliedPosts: [POSTS[1], POSTS[2]] }
+  // 명세서 3.4 — PATCH /api/notifications/:id/read
+  readNotification: async (id) => {
+    await delay(300)
+    NOTIFICATIONS = NOTIFICATIONS.map((n) => (n.id === Number(id) ? { ...n, isRead: true } : n))
+    return { success: true, message: '알림 읽음 처리 완료' }
   },
 }
