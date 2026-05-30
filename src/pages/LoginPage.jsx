@@ -19,7 +19,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const res = await api.login({ studentId: form.studentId, password: form.password })
-      login(res.token, res.user)
+      login(res.accessToken, {userId: res.userId, nickname: res.nickname})
       navigate('/home', { replace: true })
     } catch (err) {
       setError(err.message)

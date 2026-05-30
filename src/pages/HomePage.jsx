@@ -16,7 +16,19 @@ export default function HomePage() {
 
   useEffect(() => {
     api.getPosts()
-      .then((res) => setPosts(res.posts ?? res))
+      .then((res) => {
+        // 백엔드 목록 항목: { postId, title, currentCapacity, maxCapacity, meetingTime, isFulled, tags }
+        const list = res.posts ?? res
+        setPosts(list.map((p) => ({
+          ...p,
+          id: p.postId,
+          meetDate: p.meetingTime,
+          currentCount: p.currentCapacity,
+          maxCount: p.maxCapacity,
+          status: p.status ?? 'OPEN', // 목록 API가 status를 안 줘서 기본 '모집중'
+          tags: p.tags ?? [],
+        })))
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [])

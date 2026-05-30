@@ -35,8 +35,18 @@ export default function PostCreatePage() {
 
     setLoading(true)
     try {
-      const res = await api.createPost(form)
-      navigate(`/posts/${res.id}`, { replace: true })
+      const payload = {
+        title: form.title,
+        content: form.description,
+        meetingTime: form.meetDate.replace('T', ' '), // datetime-local → MySQL DATETIME 형식
+        maxCapacity: form.maxCount,
+        openChatUrl: form.openChatLink,
+        isFulled: false,
+        tags: form.tags,
+      }
+
+      const res = await api.createPost(payload)
+      navigate(`/posts/${res.postId}`, { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {

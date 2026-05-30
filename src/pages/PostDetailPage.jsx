@@ -22,7 +22,19 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     api.getPost(postId)
-      .then(setPost)
+      .then((data) => {
+        // 백엔드 응답: { posts: { postId, author, content, currentCapacity, maxCapacity, meetingTime, ... } }
+        const p = data.posts ?? data
+        setPost({
+          ...p,
+          authorId: p.author,
+          currentCount: p.currentCapacity,
+          maxCount: p.maxCapacity,
+          meetDate: p.meetingTime,
+          description: p.content,
+          tags: p.tags ?? [],
+        })
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [postId])
