@@ -1,4 +1,20 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+// 인라인 스타일만 쓰는 페이지라 미디어쿼리 대신 화면폭으로 분기한다.
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= breakpoint : false
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`)
+    const handler = (e) => setIsMobile(e.matches)
+    setIsMobile(mq.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [breakpoint])
+  return isMobile
+}
 
 const MOCK_CARDS = [
   { tags: ['맛집탐방'], title: '북문 파스타 같이 가실 분!', count: '2/4', status: 'OPEN' },
@@ -14,32 +30,38 @@ const FEATURES = [
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const m = useIsMobile()
 
   return (
-    <div style={{ minHeight: '100svh', background: '#fff', fontFamily: 'var(--sans)' }}>
+    <div style={{ minHeight: '100svh', background: '#fff', fontFamily: 'var(--sans)', overflowX: 'hidden' }}>
       {/* ─── Nav ─── */}
       <nav style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 40px', height: 64,
+        padding: m ? '0 20px' : '0 40px', height: m ? 56 : 64,
         borderBottom: '1px solid #FFE8DE',
         position: 'sticky', top: 0, background: '#fff', zIndex: 100,
       }}>
-        <span style={{ fontSize: 22, fontWeight: 900, color: 'var(--primary)', letterSpacing: -0.5 }}>
+        <span style={{ fontSize: m ? 19 : 22, fontWeight: 900, color: 'var(--primary)', letterSpacing: -0.5 }}>
           취미메이트
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-          <button
-            onClick={() => navigate('/home')}
-            style={{ fontSize: 14, fontWeight: 600, color: '#5C3820', background: 'none', border: 'none', cursor: 'pointer' }}
-          >모집보기</button>
-          <button
-            onClick={() => navigate('/posts/new')}
-            style={{ fontSize: 14, fontWeight: 600, color: '#5C3820', background: 'none', border: 'none', cursor: 'pointer' }}
-          >작성하기</button>
-          <button
-            onClick={() => navigate('/my')}
-            style={{ fontSize: 14, fontWeight: 600, color: '#5C3820', background: 'none', border: 'none', cursor: 'pointer' }}
-          >마이페이지</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: m ? 12 : 32 }}>
+          {/* 모바일에선 보조 메뉴는 숨기고 로그인만 노출 (가로 오버플로 방지) */}
+          {!m && (
+            <>
+              <button
+                onClick={() => navigate('/home')}
+                style={{ fontSize: 14, fontWeight: 600, color: '#5C3820', background: 'none', border: 'none', cursor: 'pointer' }}
+              >모집보기</button>
+              <button
+                onClick={() => navigate('/posts/new')}
+                style={{ fontSize: 14, fontWeight: 600, color: '#5C3820', background: 'none', border: 'none', cursor: 'pointer' }}
+              >작성하기</button>
+              <button
+                onClick={() => navigate('/my')}
+                style={{ fontSize: 14, fontWeight: 600, color: '#5C3820', background: 'none', border: 'none', cursor: 'pointer' }}
+              >마이페이지</button>
+            </>
+          )}
           <button
             onClick={() => navigate('/login')}
             style={{
@@ -53,13 +75,15 @@ export default function LandingPage() {
 
       {/* ─── Hero ─── */}
       <section style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '64px 80px 56px',
+        display: 'flex', alignItems: 'center',
+        justifyContent: m ? 'center' : 'space-between',
+        flexDirection: m ? 'column' : 'row',
+        padding: m ? '44px 22px 48px' : '64px 80px 56px',
         background: 'linear-gradient(150deg, #fff 55%, #FFF4EE 100%)',
-        gap: 40,
+        gap: m ? 44 : 40,
       }}>
         {/* Left: text */}
-        <div style={{ flex: '0 0 auto', maxWidth: 440 }}>
+        <div style={{ flex: '0 0 auto', maxWidth: m ? '100%' : 440, textAlign: m ? 'center' : 'left' }}>
           <div style={{
             display: 'inline-block', padding: '5px 12px', borderRadius: 20,
             background: 'var(--primary-dim)', color: 'var(--primary)',
@@ -68,17 +92,17 @@ export default function LandingPage() {
             경북대 학우 전용 취미 매칭 플랫폼
           </div>
           <h1 style={{
-            fontSize: 46, fontWeight: 900, color: '#1A0800', lineHeight: 1.2,
-            letterSpacing: -1.5, marginBottom: 18,
+            fontSize: m ? 32 : 46, fontWeight: 900, color: '#1A0800', lineHeight: 1.2,
+            letterSpacing: m ? -1 : -1.5, marginBottom: 18,
           }}>
             공강이 심심할 땐,<br />
             <span style={{ color: 'var(--primary)' }}>취미메이트</span>
           </h1>
-          <p style={{ fontSize: 16, color: '#A08070', lineHeight: 1.7, marginBottom: 36 }}>
+          <p style={{ fontSize: m ? 15 : 16, color: '#A08070', lineHeight: 1.7, marginBottom: 36 }}>
             경북대 학우들과 하루에 연결되고,<br />
             새로운 일상이 시작되는 곳
           </p>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: m ? 'center' : 'flex-start', flexWrap: 'wrap' }}>
             <button
               onClick={() => navigate('/signup')}
               style={{
@@ -221,15 +245,15 @@ export default function LandingPage() {
 
       {/* ─── Features ─── */}
       <section style={{
-        padding: '72px 80px',
+        padding: m ? '52px 22px' : '72px 80px',
         background: '#fff',
         borderTop: '1px solid #FFE8DE',
       }}>
-        <div style={{ textAlign: 'center', marginBottom: 52 }}>
+        <div style={{ textAlign: 'center', marginBottom: m ? 36 : 52 }}>
           <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', marginBottom: 10, letterSpacing: 0.5 }}>
             WHY HOBBYMATE
           </p>
-          <h2 style={{ fontSize: 34, fontWeight: 900, color: '#1A0800', letterSpacing: -1 }}>
+          <h2 style={{ fontSize: m ? 26 : 34, fontWeight: 900, color: '#1A0800', letterSpacing: -1 }}>
             함께라서 더 즐거운 취미
           </h2>
         </div>
@@ -265,20 +289,20 @@ export default function LandingPage() {
 
       {/* ─── CTA Banner ─── */}
       <section style={{
-        padding: '72px 80px',
+        padding: m ? '52px 24px' : '72px 80px',
         background: 'linear-gradient(135deg, var(--primary) 0%, #E04A1A 100%)',
         textAlign: 'center',
       }}>
-        <h2 style={{ fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 14, letterSpacing: -1 }}>
+        <h2 style={{ fontSize: m ? 24 : 32, fontWeight: 900, color: '#fff', marginBottom: 14, letterSpacing: -1 }}>
           지금 바로 메이트를 찾아보세요
         </h2>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 36 }}>
+        <p style={{ fontSize: m ? 14 : 16, color: 'rgba(255,255,255,0.8)', marginBottom: m ? 28 : 36 }}>
           경북대 학번·이메일 인증 후 바로 시작할 수 있어요
         </p>
         <button
           onClick={() => navigate('/signup')}
           style={{
-            padding: '16px 40px', borderRadius: 14, fontWeight: 800, fontSize: 17,
+            padding: m ? '14px 32px' : '16px 40px', borderRadius: 14, fontWeight: 800, fontSize: m ? 16 : 17,
             background: '#fff', color: 'var(--primary)', border: 'none', cursor: 'pointer',
             boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
             transition: 'transform 0.15s',
@@ -290,11 +314,14 @@ export default function LandingPage() {
 
       {/* ─── Footer ─── */}
       <footer style={{
-        padding: '28px 80px',
+        padding: m ? '24px' : '28px 80px',
         borderTop: '1px solid #FFE8DE',
         display: 'flex',
+        flexDirection: m ? 'column' : 'row',
+        gap: m ? 8 : 0,
         justifyContent: 'space-between',
         alignItems: 'center',
+        textAlign: 'center',
         background: '#fff',
       }}>
         <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--primary)' }}>취미메이트</span>
