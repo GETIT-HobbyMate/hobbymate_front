@@ -20,21 +20,25 @@ export default function PostDetailPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // 게시글을 불러와 화면용 형태로 매핑한다.
+  // 백엔드 응답: { posts: { postId, author, content, currentCapacity, maxCapacity, meetingTime, ... } }
+  async function loadPost() {
+    const data = await api.getPost(postId)
+    const p = data.posts ?? data
+    setPost({
+      ...p,
+      authorId: p.author,
+      currentCount: p.currentCapacity,
+      maxCount: p.maxCapacity,
+      meetDate: p.meetingTime,
+      description: p.content,
+      tags: p.tags ?? [],
+    })
+  }
+
   useEffect(() => {
-    api.getPost(postId)
-      .then((data) => {
-        // 백엔드 응답: { posts: { postId, author, content, currentCapacity, maxCapacity, meetingTime, ... } }
-        const p = data.posts ?? data
-        setPost({
-          ...p,
-          authorId: p.author,
-          currentCount: p.currentCapacity,
-          maxCount: p.maxCapacity,
-          meetDate: p.meetingTime,
-          description: p.content,
-          tags: p.tags ?? [],
-        })
-      })
+    setLoading(true)
+    loadPost()
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [postId])
@@ -42,22 +46,26 @@ export default function PostDetailPage() {
   const isOwner = post?.authorId === user?.id
   const hasApplied = post?.appliedUserIds?.includes(user?.id)
   const isFull = post?.currentCount >= post?.maxCount
-  const isMatched = post?.status === 'MATCHED'
+  // 백엔드는 매칭 완료 시 status를 'COMPLETED'로 내려준다(구버전 호환 위해 'MATCHED'도 인정).
+  const isMatched = post?.status === 'COMPLETED' || post?.status === 'MATCHED'
 
   async function handleApply() {
     setActionLoading(true)
+    setError('')
     try {
-      const updated = await api.applyPost(postId)
-      setPost(updated)
+      // 신청 응답에는 게시글 본문이 없으므로(빈 객체) 응답으로 덮어쓰지 말고 다시 불러온다.
+      await api.applyPost(postId)
+      await loadPost()
     } catch (err) { setError(err.message) }
     finally { setActionLoading(false) }
   }
 
   async function handleCancel() {
     setActionLoading(true)
+    setError('')
     try {
-      const updated = await api.cancelApply(postId)
-      setPost(updated)
+      await api.cancelApply(postId)
+      await loadPost()
     } catch (err) { setError(err.message) }
     finally { setActionLoading(false) }
   }
