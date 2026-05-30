@@ -19,7 +19,7 @@ export default function SignupPage() {
     if (!form.studentId) return
     try {
       const res = await api.checkStudentId(form.studentId)
-      setChecks((c) => ({ ...c, studentId: res.available ? 'ok' : 'dup' }))
+      setChecks((c) => ({ ...c, studentId: res.isAvailable ? 'ok' : 'dup' }))
     } catch { setChecks((c) => ({ ...c, studentId: 'err' })) }
   }
 
@@ -27,7 +27,7 @@ export default function SignupPage() {
     if (!form.nickname) return
     try {
       const res = await api.checkNickname(form.nickname)
-      setChecks((c) => ({ ...c, nickname: res.available ? 'ok' : 'dup' }))
+      setChecks((c) => ({ ...c, nickname: res.isAvailable ? 'ok' : 'dup' }))
     } catch { setChecks((c) => ({ ...c, nickname: 'err' })) }
   }
 
